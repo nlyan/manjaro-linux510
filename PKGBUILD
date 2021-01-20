@@ -9,12 +9,12 @@
 # Cloud Server
 _server=cpx51
 
-pkgbase=linux510
-pkgname=('linux510' 'linux510-headers')
-_kernelname=-MANJARO
+pkgbase=linux510-qca6390
+pkgname=('linux510-qca6390' 'linux510-qca6390-headers')
+_kernelname=-QCA6390
 _basekernel=5.10
 _basever=510
-pkgver=5.10.8
+pkgver=5.10.9
 pkgrel=1
 arch=('x86_64')
 url="http://www.kernel.org/"
@@ -31,16 +31,13 @@ makedepends=('bc'
     'tar'
     'xz')
 options=('!strip')
-source=("https://www.kernel.org/pub/linux/kernel/v5.x/linux-${_basekernel}.tar.xz"
-        "https://www.kernel.org/pub/linux/kernel/v5.x/patch-${pkgver}.xz"
+source=("https://github.com/nlyan/linux/archive/v${pkgver}-ath.tar.gz"
         # the main kernel config files
         'config' 'config.anbox'
         # ARCH Patches
         '0001-ZEN-Add-sysctl-and-CONFIG-to-disallow-unprivileged-CLONE_NEWUSER.patch'
         '0002-HID-quirks-Add-Apple-Magic-Trackpad-2-to-hid_have_special_driver-list.patch'
         '0003-iwlwifi-Fix-regression-from-UDP-segmentation-support.patch'
-        # Temp Fixes
-        '0008-revert-display-mode-vba-20v2c.patch'
         # MANJARO Patches
         '0101-i2c-nuvoton-nc677x-hwmon-driver.patch'
         '0102-iomap-iomap_bmap-should-accept-unwritten-maps.patch'
@@ -69,14 +66,12 @@ source=("https://www.kernel.org/pub/linux/kernel/v5.x/linux-${_basekernel}.tar.x
         '0512-bootsplash.patch'
         '0513-bootsplash.gitpatch'
         )
-sha256sums=('dcdf99e43e98330d925016985bfbc7b83c66d367b714b2de0cbbfcbf83d8ca43'
-            'fc89eb1b4ede1ab0331df04e33d6581aa3c1e7195aa771b0378cc292c00be892'
+sha256sums=('1273d4fa518a6b9098f5b4369d5ca0a21b53367f3ce30a66633874a952626305'
             'd78e96f4427b0138ee224202d612583a7f85ae2f76acfeb3eded3307f17e9ef3'
             'fc896e5b00fad732d937bfb7b0db41922ecdb3a488bc1c1b91b201e028eed866'
             '986f8d802f37b72a54256f0ab84da83cb229388d58c0b6750f7c770818a18421'
             'df5843818f1571841e1a8bdbe38d7f853d841f38de46d6a6a5765de089495578'
             '5791e6fd2ae2f4938b1190af65da3213cbfa2b3e7f50e6dcfdc8ded3ca17d720'
-            'b918b1e8ec3a6063c750f173d6a71991ec7a5aa997dd4e186545cd28c3c58242'
             '7823d7488f42bc4ed7dfae6d1014dbde679d8b862c9a3697a39ba0dae5918978'
             '95745075edd597caa92b369cfbcd11a04c9e3c88c0c987c70114924e1e01df5c'
             'b302ba6c5bbe8ed19b20207505d513208fae1e678cf4d8e7ac0b154e5fe3f456'
@@ -102,12 +97,9 @@ sha256sums=('dcdf99e43e98330d925016985bfbc7b83c66d367b714b2de0cbbfcbf83d8ca43'
             '60e295601e4fb33d9bf65f198c54c7eb07c0d1e91e2ad1e0dd6cd6e142cb266d'
             '035ea4b2a7621054f4560471f45336b981538a40172d8f17285910d4e0e0b3ef')
 
-prepare() {
-  cd "${srcdir}/linux-${_basekernel}"
 
-  # add upstream patch
-  msg "add upstream patch"
-  patch -p1 -i "${srcdir}/patch-${pkgver}"
+prepare() {
+  cd "${srcdir}/linux-${pkgver}-ath"
 
   local src
   for src in "${source[@]}"; do
@@ -119,7 +111,7 @@ prepare() {
   done
 
   msg2 "0513-bootsplash"
-  git apply -p1 < "${srcdir}/0513-bootsplash.gitpatch"  
+  git apply -p1 < "${srcdir}/0513-bootsplash.gitpatch"
 
   msg2 "add config.anbox to config"
   cat "${srcdir}/config" > ./.config
@@ -153,19 +145,19 @@ prepare() {
 }
 
 build() {
-  cd "${srcdir}/linux-${_basekernel}"
+  cd "${srcdir}/linux-${pkgver}-ath"
 
   msg "build"
   make ${MAKEFLAGS} LOCALVERSION= bzImage modules
 }
 
-package_linux510() {
+package_linux510-qca6390() {
   pkgdesc="The ${pkgbase/linux/Linux} kernel and modules"
   depends=('coreutils' 'linux-firmware' 'kmod' 'mkinitcpio>=27')
   optdepends=('crda: to set the correct wireless channels of your country')
   provides=("linux=${pkgver}" VIRTUALBOX-GUEST-MODULES WIREGUARD-MODULE)
 
-  cd "${srcdir}/linux-${_basekernel}"
+  cd "${srcdir}/linux-${pkgver}-ath"
 
   KARCH=x86
 
@@ -204,12 +196,12 @@ package_linux510() {
   install -Dt "${pkgdir}/usr/lib/modules/${_kernver}/build" -m644 vmlinux
 }
 
-package_linux510-headers() {
+package_linux510-qca6390-headers() {
   pkgdesc="Header files and scripts for building modules for ${pkgbase/linux/Linux} kernel"
   depends=('gawk' 'python' 'libelf')
   provides=("linux-headers=$pkgver")
 
-  cd "${srcdir}/linux-${_basekernel}"
+  cd "${srcdir}/linux-${pkgver}-ath"
   local _builddir="${pkgdir}/usr/lib/modules/${_kernver}/build"
 
   install -Dt "${_builddir}" -m644 Makefile .config Module.symvers
